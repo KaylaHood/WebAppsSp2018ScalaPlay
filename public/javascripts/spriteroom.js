@@ -13,106 +13,136 @@ var mySprite = {
 
 var spritesInRoom = {};
 
-//Create WebSocket connection.
-var socket = new WebSocket('ws://'+window.location.hostname+':'+window.location.port+'/socket');
+var canvas;
 
-// Connection opened 
-socket.addEventListener('open', function (event) {
-	socket.send(JSON.stringify(mySprite));
-});
-//Listen for messages
-socket.addEventListener('message', function (event) {
-    const newClientMsg = JSON.parse(event.data);
-    const newClientIsSelf = newClientMsg.isSelf;
-    const newClient = newClientMsg.clientSprite;
-    console.log(newClientMsg);
-    if((typeof newClient.id !== undefined) && (typeof newClient.xPos !== undefined) && (typeof newClient.yPos !== undefined)) {
-    	if(newClientIsSelf) {
-    		mySprite.id = newClient.id;
-    		// position data may be invalid for the "self" object sent by the websocket
-    	}
-    	else {
-    		newClientIdStr = (newClient.id).toString();
-    		spritesInRoom[newClientIdStr]['xPos'] = newClient.xPos;
-    		spritesInRoom[newClientIdStr]['yPos'] = newClient.yPos;
-    	}
-    } else {
-    	console.log("Invalid socket message");
-    }
-});
+var socket;
+var socketTimer;
 
-$(document).ready(function() {
-	$("body").height($("window").height());
+document.addEventListener('DOMContentLoaded', (function() {
+	setWindowHeight();
 	// Set up canvas and draw new client's sprite
-	var canvas = $("#sprite-canvas");
-	canvas.attr('height', ($("body").height() - $("#sprite-header").height()));
-	canvas.attr('width', ($("body").width()));
+	canvas = document.getElementById("sprite-canvas");
+	var canvasHeight = (document.body.clientHeight - document.getElementById("sprite-header").clientHeight);
+	var canvasWidth = (document.body.clientWidth);
+	canvas.setAttribute('height', canvasHeight.toString() + "px");
+	canvas.setAttribute('width', canvasWidth.toString() + "px");
 	
-	mySprite.xPos = (canvas.width()) / 2;
-	mySprite.yPos = (canvas.height()) / 2;
-	spriteRadius = (canvas.width() / 100);
+	//mySprite.xPos = canvasWidth / 2;
+	//mySprite.yPos = canvasHeight / 2;
+	mySprite.xPos = 10;
+	mySprite.yPos = 10;
+	spriteRadius = (canvasWidth / 100);
 	if(spriteRadius <= 0) {
 		spriteRadius = 1;
 	}
 	
-	$(window).keydown(function(event) {
-		if(event.which == leftArrowKeyCode) {
+	//Create WebSocket connection.
+	socket = new WebSocket('ws://'+window.location.hostname+':'+window.location.port+'/socket');
+
+	// Connection opened 
+	socket.addEventListener('open', function (event) {
+		socket.send(JSON.stringify(mySprite));
+	});
+	
+	//Listen for messages
+	socket.addEventListener('message', function (event) {
+	    const newClientMsg = JSON.parse(event.data);
+	    const newClientIsSelf = newClientMsg.isSelf;
+	    const newClient = newClientMsg.clientSprite;
+	    console.log(newClientMsg);
+	    if((typeof newClient.id !== undefined) && (typeof newClient.xPos !== undefined) && (typeof newClient.yPos !== undefined)) {
+	    	if(newClientIsSelf) {
+	    		mySprite.id = newClient.id;
+	    		// position data may be invalid for the "self" object sent by the websocket
+	    	}
+	    	else {
+	    		newClientIdStr = (newClient.id).toString();
+	    		spritesInRoom[newClientIdStr]['xPos'] = newClient.xPos;
+	    		spritesInRoom[newClientIdStr]['yPos'] = newClient.yPos;
+	    	}
+	    } else {
+	    	console.log("Invalid socket message");
+	    }
+	});
+	keepAlive();
+	
+	document.body.addEventListener('keydown', (function(event) {
+		if(event.keyCode == leftArrowKeyCode) {
 			mySprite.xPos -= 1;
 			mySprite.xPos = (mySprite.xPos < 0) ? 0 : mySprite.xPos;
 			socket.send(JSON.stringify(mySprite));
-		} else if(event.which == rightArrowKeyCode) {
+		} else if(event.keyCode == rightArrowKeyCode) {
 			mySprite.xPos += 1;
-			mySprite.xPos = (mySprite.xPos > canvas.width()) ? canvas.width() : mySprite.xPos;
+			mySprite.xPos = (mySprite.xPos > canvas.clientWidth) ? canvas.clientWidth : mySprite.xPos;
 			socket.send(JSON.stringify(mySprite));
-		} else if(event.which == upArrowKeyCode) {
+		} else if(event.keyCode == upArrowKeyCode) {
 			mySprite.yPos -= 1;
 			mySprite.yPos = (mySprite.yPos < 0) ? 0 : mySprite.yPos;
 			socket.send(JSON.stringify(mySprite));
-		} else if(event.which == downArrowKeyCode) {
+		} else if(event.keyCode == downArrowKeyCode) {
 			mySprite.yPos += 1;
-			mySprite.yPos = (mySprite.yPos > canvas.height()) ? canvas.height() : mySprite.yPos;
+			mySprite.yPos = (mySprite.yPos > canvas.clientHeight) ? canvas.clientHeight : mySprite.yPos;
 			socket.send(JSON.stringify(mySprite));
 		}
-	});
-	$(window).keyup(function(event) {
-		if(event.which == leftArrowKeyCode) {
+	}));
+
+	document.body.addEventListener('keyup', (function(event) {
+		if(event.keyCode == leftArrowKeyCode) {
 			console.log("left arrow released");
-		} else if(event.which == rightArrowKeyCode) {
+		} else if(event.keyCode == rightArrowKeyCode) {
 			console.log("right arrow released");
-		} else if(event.which == upArrowKeyCode) {
+		} else if(event.keyCode == upArrowKeyCode) {
 			console.log("up arrow released");
-		} else if(event.which == downArrowKeyCode) {
+		} else if(event.keyCode == downArrowKeyCode) {
 			console.log("down arrow released");
 		}
-	});
+	}));
 	
 	setInterval(render,100);
 	
-});
+}), false);
 
-function clearCanvas(ctx) {
-	ctx.fillStyle = "#2F2F2F";
-	ctx.fillRect(0,0, $("#sprite-canvas").width(), $("#sprite-canvas").height());
+function keepAlive() { 
+    var timeout = 20000;  
+    if (socket.readyState == socket.OPEN) {  
+        socket.send('');  
+    }  
+    socketTimer = setTimeout(keepAlive, timeout);  
+}  
+function cancelKeepAlive() {  
+    if (socketTimer) {  
+        clearTimeout(socketTimer);  
+    }  
 }
 
-function drawClientSprite(ctx) {
+function clearCanvas(ctx) {
+	ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+	ctx.fillStyle = "#2F2F2F";
+	ctx.fillRect(0,0, canvas.clientWidth, canvas.clientHeight);
+}
+
+function drawSprite(ctx, sprite) {
 	ctx.fillStyle = "#00FF00";
 	ctx.strokeStyle = "#FFFFFF";
 	ctx.lineWidth = 2;
 	ctx.beginPath();
-	ctx.arc(mySprite.xPos, mySprite.yPos, mySprite.radius, 0, 2 * Math.PI);
+	ctx.arc(sprite.xPos, sprite.yPos, spriteRadius, 0, 2 * Math.PI);
 	ctx.closePath();
 	ctx.fill();
 	ctx.stroke();
 }
 
 function render() {
-	let canvas = $("#sprite-canvas")[0];
 	if(canvas.getContext) {
 		var ctx = canvas.getContext('2d');
-		ctx.clearRect(0, 0, $("#sprite-canvas").width(), $("#sprite-canvas").height());
 		clearCanvas(ctx);
-		drawClientSprite(ctx);
+		drawSprite(ctx,mySprite);
+		for (var spriteId in spritesInRoom) {
+			if (spritesInRoom.hasOwnProperty(key)) {
+				var obj = spritesInRoom[spriteId];
+			    drawSprite(ctx,obj);
+			}
+		}
 	}
 }
 
