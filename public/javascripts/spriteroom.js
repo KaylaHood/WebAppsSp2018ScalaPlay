@@ -18,6 +18,21 @@ var canvas;
 var socket;
 var socketTimer;
 
+/**
+ * the messageType can be one of four values:
+ * 0: removeClient message
+ * 1: updateClient message
+ * 2: initSelf message
+ * 3: nullMsg message
+ * see the WebSocketActor.scala source file for more information
+ */
+const socketMsgType = {
+		removeClient: 0,
+		updateClient: 1,
+		initSelf: 2,
+		nullMsg: 3
+};
+
 document.addEventListener('DOMContentLoaded', (function() {
 	setWindowHeight();
 	// Set up canvas and draw new client's sprite
@@ -38,51 +53,26 @@ document.addEventListener('DOMContentLoaded', (function() {
 	
 	//Create WebSocket connection.
 	socket = new WebSocket('ws://'+window.location.hostname+':'+window.location.port+'/socket');
-
-	// Connection opened 
-	socket.addEventListener('open', function (event) {
-		socket.send(JSON.stringify(mySprite));
-	});
-	
-	//Listen for messages
-	socket.addEventListener('message', function (event) {
-	    const newClientMsg = JSON.parse(event.data);
-	    const newClientIsSelf = newClientMsg.isSelf;
-	    const newClient = newClientMsg.clientSprite;
-	    console.log(newClientMsg);
-	    if((typeof newClient.id !== undefined) && (typeof newClient.xPos !== undefined) && (typeof newClient.yPos !== undefined)) {
-	    	if(newClientIsSelf) {
-	    		mySprite.id = newClient.id;
-	    		// position data may be invalid for the "self" object sent by the websocket
-	    	}
-	    	else {
-	    		newClientIdStr = (newClient.id).toString();
-	    		spritesInRoom[newClientIdStr]['xPos'] = newClient.xPos;
-	    		spritesInRoom[newClientIdStr]['yPos'] = newClient.yPos;
-	    	}
-	    } else {
-	    	console.log("Invalid socket message");
-	    }
-	});
+	initializeSocket();
 	keepAlive();
 	
 	document.body.addEventListener('keydown', (function(event) {
 		if(event.keyCode == leftArrowKeyCode) {
 			mySprite.xPos -= 1;
 			mySprite.xPos = (mySprite.xPos < 0) ? 0 : mySprite.xPos;
-			socket.send(JSON.stringify(mySprite));
+			socket.send(JSON.stringify({'messageType': socketMsgType.updateClient, 'clientSprite': mySprite}));
 		} else if(event.keyCode == rightArrowKeyCode) {
 			mySprite.xPos += 1;
 			mySprite.xPos = (mySprite.xPos > canvas.clientWidth) ? canvas.clientWidth : mySprite.xPos;
-			socket.send(JSON.stringify(mySprite));
+			socket.send(JSON.stringify({'messageType': socketMsgType.updateClient, 'clientSprite': mySprite}));
 		} else if(event.keyCode == upArrowKeyCode) {
 			mySprite.yPos -= 1;
 			mySprite.yPos = (mySprite.yPos < 0) ? 0 : mySprite.yPos;
-			socket.send(JSON.stringify(mySprite));
+			socket.send(JSON.stringify({'messageType': socketMsgType.updateClient, 'clientSprite': mySprite}));
 		} else if(event.keyCode == downArrowKeyCode) {
 			mySprite.yPos += 1;
 			mySprite.yPos = (mySprite.yPos > canvas.clientHeight) ? canvas.clientHeight : mySprite.yPos;
-			socket.send(JSON.stringify(mySprite));
+			socket.send(JSON.stringify({'messageType': socketMsgType.updateClient, 'clientSprite': mySprite}));
 		}
 	}));
 
@@ -102,12 +92,50 @@ document.addEventListener('DOMContentLoaded', (function() {
 	
 }), false);
 
+function initializeSocket() {
+	// Connection opened 
+	socket.addEventListener('open', function (event) {
+		socket.send(JSON.stringify({'messageType': socketMsgType.nullMsg, 'clientSprite': mySprite}));
+	});
+	
+	//Listen for messages
+	socket.addEventListener('message', function (event) {
+	    const socketMsg = JSON.parse(event.data);
+	    console.log("Got socket message: " + socketMsg);
+	    const socketMsgType = socketMsg.messageType;
+	    const clientSprite = socketMsg.clientSprite;
+	    if((typeof clientSprite.id !== undefined) && (typeof clientSprite.xPos !== undefined) && (typeof clientSprite.yPos !== undefined)) {
+	    	if(socketMsgType == socketMsgType.initSelf) {
+	    		// initSelf => set this client's id to the id given by the server
+	    		mySprite.id = clientSprite.id;
+	    		// position data may be invalid for the "self" object sent by the websocket
+	    		// so we ignore it
+	    	} else if(socketMsgType == socketMsgType.updateClient) {
+	    		// updateClient => update (or add) client to sprite room
+	    		var clientIdStr = (clientSprite.id).toString();
+	    		spritesInRoom[clientIdStr]['xPos'] = clientSprite.xPos;
+	    		spritesInRoom[clientIdStr]['yPos'] = clientSprite.yPos;
+	    	} else if(socketMsgType == socketMsgType.removeClient) {
+	    		// removeClient => remove the sprite with the given id from the sprite room
+	    		var clientIdStr = (clientSprite.id).toString();
+	    		delete spritesInRoom[clientIdStr];
+	    	}
+	    } else {
+	    	console.log("Invalid socket message");
+	    }
+	});
+}
+
 function keepAlive() { 
     var timeout = 20000;  
     if (socket.readyState == socket.OPEN) {  
-        socket.send('');  
-    }  
-    socketTimer = setTimeout(keepAlive, timeout);  
+    	socket.send(JSON.stringify({'messageType': socketMsgType.nullMsg, 'clientSprite': mySprite}));
+    } else if(socket.readyState == socket.CLOSED || socket.readyState == socket.CLOSING) {
+    	socket.close();
+    	socket = new WebSocket('ws://'+window.location.hostname+':'+window.location.port+'/socket');
+    	initializeSocket();
+    }
+    socketTimer = setTimeout(function() { keepAlive(); }, timeout);  
 }  
 function cancelKeepAlive() {  
     if (socketTimer) {  

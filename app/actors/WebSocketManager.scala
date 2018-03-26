@@ -9,12 +9,23 @@ class WebSocketManager extends Actor {
   private var clients = List[ActorRef]()
   
   def receive = {
-    case NewClient(clientActor) =>
+    case RemoveActor(clientActor, clientId) =>
+      removeClient(clientActor)
+      clients.foreach(c => c.tell(WebSocketActor.RemoveClient(clientId), self))
+    case NewActor(clientActor, clientSprite) =>
       println("New client connected")
       clients ::= clientActor
-    case BroadcastMessage(clientState) =>
+      clientActor.tell(WebSocketActor.ClientUpdate(clientSprite), self)
+    case BroadcastMessage(clientSprite) =>
       println("Broadcasting message to all clients...")
-      clients.foreach(c => c.tell(WebSocketActor.ClientUpdate(clientState), self))
+      clients.foreach(c => c.tell(WebSocketActor.ClientUpdate(clientSprite), self))
+  }
+  
+  def removeClient(clientRef: ActorRef) = {
+      if(clients.contains(clientRef)) {
+        println("Removing client from websocket pool...");
+        clients = clients.filterNot(x => x == clientRef)
+      }
   }
 
 }
@@ -30,6 +41,7 @@ object WebSocketManager {
   
   def props = Props[WebSocketManager]
   
-  case class NewClient(clientActor: ActorRef)
-  case class BroadcastMessage(clientState: ClientSprite)
+  case class RemoveActor(clientActor: ActorRef, clientId: Int)
+  case class NewActor(clientActor: ActorRef, clientSprite: SpriteState)
+  case class BroadcastMessage(clientSprite: SpriteState)
 }
