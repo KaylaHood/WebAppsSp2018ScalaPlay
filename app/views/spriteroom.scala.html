@@ -1,0 +1,16 @@
+@*
+ * This template takes a two arguments, a String containing a
+ * message to display and an AssetsFinder to locate static assets.
+ *@
+@(message: String)(implicit assetsFinder: AssetsFinder)
+
+@main("Sprite Room", assetsFinder) {
+	<h2 id="sprite-header">Task 7: Multiplayer Sprite Room</h2>
+	@*
+	 * Canvas is used to draw each client's sprite to
+	 * the window
+	 *@
+	<canvas id="sprite-canvas" class="fullscreen"></canvas>
+}
+
+<script src="@assetsFinder.path("javascripts/spriteroom.js")" type="text/javascript"></script>
