@@ -23,7 +23,10 @@ class WebSocketActor(out: ActorRef, manager: ActorRef) extends Actor {
   println("Connecting new client actor...")
   actorSprite.id = WebSocketManager.getNextClientID
   println("New client id: " + actorSprite.id)
+  // tell manager that this actor has been connected
   manager.tell(WebSocketManager.NewActor(self, actorSprite), self)
+  // send initialization message to client
+  out.tell(new SocketMessage(SocketMessageTypes.initSelf, actorSprite), self)
   
   def receive = {
     case SocketMessage(3, clientSprite) =>
@@ -33,11 +36,11 @@ class WebSocketActor(out: ActorRef, manager: ActorRef) extends Actor {
       // update actorSprite -- ignore id because sometimes the client gets that messed up
       actorSprite.xPos = clientSprite.xPos
       actorSprite.yPos = clientSprite.yPos
-      manager.tell(WebSocketManager.BroadcastMessage(clientSprite), self)
+      manager.tell(WebSocketManager.BroadcastMessage(self, clientSprite), self)
     case ClientUpdate(clientState) =>
       println("Client recieved ClientUpdate response from WebSocketManager. clientState = " + clientState)
       if(clientState.id == actorSprite.id) {
-        out.tell(new SocketMessage(SocketMessageTypes.initSelf, clientState), self)
+        // do nothing
       }
       else {
         out.tell(new SocketMessage(SocketMessageTypes.updateClient, clientState), self)
