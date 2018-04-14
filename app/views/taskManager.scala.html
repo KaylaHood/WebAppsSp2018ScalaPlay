@@ -30,7 +30,7 @@
 		<tr><th>Title</th><th>Description</th><th>Due Date</th></tr>
 		@for(t <- tasks) {
 			@helper.form(action = helper.CSRF(routes.TaskController.removeTask(t.taskId.get))) {
-				<tr id="@(t.taskId)"><td>@(t.title)</td><td>@(t.desc)</td><td>@timestampToString(t.dueDate)</td></tr>
+				<tr id="@(t.taskId)"><td>@(t.title)</td><td>@(t.descr)</td><td>@timestampToString(t.dueDate)</td></tr>
 				<input type="submit" value="Submit">
 			}
 		}

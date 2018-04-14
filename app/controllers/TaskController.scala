@@ -25,7 +25,7 @@ class TaskController @Inject()(protected val dbConfigProvider: DatabaseConfigPro
   def getNewTaskForm = {
     Form(mapping(
       "ownerId" -> ignored((loggedInUser.get.userId).get),
-      "title" -> nonEmptyText,
+      "title" -> nonEmptyText(minLength=1, maxLength=128),
       "desc" -> text(minLength = 0, maxLength = 300),
       "dueDate" -> sqlTimestamp("MM-dd-yyyy hh:mm"))(NewTask.apply)(NewTask.unapply))
   }

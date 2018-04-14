@@ -23,7 +23,7 @@ class TaskLoginController @Inject()(protected val dbConfigProvider: DatabaseConf
   def getLoginForm = {
     Form(mapping(
       "username" -> nonEmptyText(minLength = 1, maxLength = 32),
-      "password" -> nonEmptyText(minLength = 0, maxLength = 32))(NewTaskUser.apply)(NewTaskUser.unapply))
+      "password" -> nonEmptyText(minLength = 1, maxLength = 32))(NewTaskUser.apply)(NewTaskUser.unapply))
   }
   
   def index = Action { implicit request =>
