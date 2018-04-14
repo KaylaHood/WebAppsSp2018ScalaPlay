@@ -4,15 +4,12 @@
 
 GET     /                           controllers.WSSpriteRoomController.index
 GET		/socket						controllers.WSSpriteRoomController.socket
-# An example controller showing how to use dependency injection
-GET     /count                      controllers.CountController.count
-# An example controller showing how to write asynchronous code
-GET     /message                    controllers.AsyncController.message
 # A page where each client instance gets to control their own sprite
 GET		/spriteroom					controllers.WSSpriteRoomController.index 
 # Pages for the task manager
 GET		/tasks						controllers.TaskController.allUserTasks
 GET		/tasks/addTask				controllers.TaskController.addTask
+GET		/tasks/removeTask/:id		controllers.TaskController.removeTask(id: Int)
 GET		/tasks/index				controllers.TaskLoginController.index
 GET		/tasks/login				controllers.TaskLoginController.login
 GET		/tasks/register				controllers.TaskLoginController.register

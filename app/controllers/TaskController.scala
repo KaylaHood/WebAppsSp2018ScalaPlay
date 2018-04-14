@@ -33,7 +33,7 @@ class TaskController @Inject()(protected val dbConfigProvider: DatabaseConfigPro
   def allUserTasks = Action.async { implicit request =>
     val sessConnected = request.session.get("connected")
     if(sessConnected.isEmpty) {
-      Future(Redirect("/tasks/login"))
+      Future(Redirect(routes.TaskLoginController.index))
     }
     else {
       loggedInUser = Some(TaskUserUtils.taskUserFromString(sessConnected.get))
@@ -45,7 +45,7 @@ class TaskController @Inject()(protected val dbConfigProvider: DatabaseConfigPro
   def addTask = Action.async { implicit request =>
     val sessConnected = request.session.get("connected")
     if(sessConnected.isEmpty) {
-      Future(Redirect("/tasks/login"))
+      Future(Redirect(routes.TaskLoginController.index))
     }
     else {
       loggedInUser = Some(TaskUserUtils.taskUserFromString(sessConnected.get))
@@ -61,6 +61,21 @@ class TaskController @Inject()(protected val dbConfigProvider: DatabaseConfigPro
             else Redirect(routes.TaskController.allUserTasks).flashing("error" -> "Failed to add task.")
           }
         })
+    }
+  }
+  
+  def removeTask(id: Int) = Action.async { implicit request =>
+    val sessConnected = request.session.get("connected")
+    if(sessConnected.isEmpty) {
+      Future(Redirect(routes.TaskLoginController.index))
+    }
+    else {
+      loggedInUser = Some(TaskUserUtils.taskUserFromString(sessConnected.get))
+      val tasksFuture = TaskQueries.removeTask(id, db)
+      tasksFuture.map { cnt =>
+        if(cnt == 1) Redirect(routes.TaskController.allUserTasks).flashing("message" -> "Task removed.")
+        else Redirect(routes.TaskController.allUserTasks).flashing("error" -> "Task to be removed could not be found.")
+      }
     }
   }
 }

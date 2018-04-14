@@ -27,4 +27,10 @@ object TaskQueries {
       tasks += Task(None, nt.ownerId, nt.title, nt.desc, nt.dueDate)
     }
   }
+  
+  def removeTask(taskId: Int, db: Database)(implicit ec: ExecutionContext): Future[Int] = {
+    val q = tasks.filter(_.taskId === taskId)
+    val action = q.delete
+    db.run(action)
+  }
 }
