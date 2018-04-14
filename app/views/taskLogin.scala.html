@@ -1,0 +1,18 @@
+@* taskLogin Template File *@
+@(loginForm: Form[NewTaskUser], registerForm: Form[NewTaskUser])(implicit request: MessagesRequestHeader, flash: Flash, assetsFinder: AssetsFinder)
+
+@main("Task Manager Login/Register", assetsFinder) {
+	<h2>Task Management System</h2>
+	<h3>Login</h3>
+	@helper.form(action = helper.CSRF(routes.TaskLoginController.login)) {
+	  @helper.inputText(loginForm("username"))
+	  @helper.textarea(loginForm("password"))
+	  <input type="submit" value="Submit">
+	}
+	<h3>Register</h3>
+	@helper.form(action = helper.CSRF(routes.TaskLoginController.register)) {
+	  @helper.inputText(registerForm("username"))
+	  @helper.textarea(registerForm("password"))
+	  <input type="submit" value="Submit">
+	}
+}

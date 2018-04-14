@@ -1,0 +1,35 @@
+@* taskManager Template File *@
+@(tasks: Seq[Task], taskUsername: String, taskForm: Form[NewTask])(implicit request: MessagesRequestHeader, flash: Flash, assetsFinder: AssetsFinder)
+
+@import java.text.SimpleDateFormat
+@import java.util.TimeZone
+@import java.sql.Timestamp
+
+@timestampToString(timestamp: java.sql.Timestamp) = {
+	@{
+		var formatLocaleGMT = new SimpleDateFormat("MM-dd-yyyy'T'HH:mm'Z'");
+		formatLocaleGMT.setTimeZone(TimeZone.getDefault);
+		formatLocaleGMT.format(timestamp)
+	}
+}
+
+@main(taskUsername ++ "'s Task Manager", assetsFinder) {
+	<h2>Task List</h2>
+	<p>Welcome, @(taskUsername)!</p>
+	<h3>Add a task to your list</h3>
+	@helper.form(action = helper.CSRF(routes.TaskController.addTask)) {
+	  @helper.inputText(taskForm("title"))
+	  @helper.textarea(taskForm("desc"))
+	  @helper.input(taskForm("dueDate")) { (id,name,value,args) =>
+	  	<input type="datetime-local" name="@name" id="@id" @toHtmlArgs(args)>
+	  }
+	  <input type="submit" value="Submit">
+	}
+	<h3>Your existing tasks</h3>
+	<table border="1">
+		<tr><th>Title</th><th>Description</th><th>Due Date</th></tr>
+		@for(t <- tasks) {
+			<tr><td>@(t.title)</td><td>@(t.desc)</td><td>@timestampToString(t.dueDate)</td></tr>
+		}
+	</table>
+}
