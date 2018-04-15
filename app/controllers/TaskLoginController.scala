@@ -2,6 +2,7 @@ package controllers
 
 import javax.inject._
 import play.api.mvc._
+import play.api.Logger
 
 import play.api.db.slick.DatabaseConfigProvider
 import play.api.db.slick.HasDatabaseConfigProvider
@@ -10,6 +11,7 @@ import slick.jdbc.JdbcProfile
 import slick.jdbc.JdbcCapabilities
 import slick.jdbc.MySQLProfile.api._
 import models._
+
 import scala.concurrent.ExecutionContext
 import play.api.data.Form
 import play.api.data.Forms.mapping
@@ -28,6 +30,10 @@ class TaskLoginController @Inject()(protected val dbConfigProvider: DatabaseConf
   
   def index = Action { implicit request =>
     Ok(views.html.taskLogin(this.getLoginForm,this.getLoginForm))
+  }
+  
+  def logout = Action { implicit request =>
+    Ok(views.html.taskLogin(this.getLoginForm,this.getLoginForm)).withNewSession
   }
 
   def login = Action.async { implicit request =>
@@ -51,15 +57,19 @@ class TaskLoginController @Inject()(protected val dbConfigProvider: DatabaseConf
   def register = Action.async { implicit request =>
     (this.getLoginForm).bindFromRequest().fold(
       formWithErrors => {
+        Logger.debug("Registration form had errors...")
         Future(BadRequest(views.html.taskLogin(this.getLoginForm, formWithErrors)))
       },
       registerForm => {
+        Logger.debug("Before registering new user.")
         val registerUser = TaskUserQueries.addTaskUser(registerForm, db)
         registerUser.map{newUser => 
           if(newUser.isDefined) {
+            Logger.debug("New user was created... redirecting")
             Redirect(routes.TaskController.allUserTasks).withSession("connected" -> TaskUserUtils.stringFromTaskUser(newUser.get))
           }
           else {
+            Logger.debug("User already existed")
             BadRequest(views.html.taskLogin(this.getLoginForm, (this.getLoginForm).withGlobalError("There is already a user with that username and password")))
           }
         }

@@ -1,8 +1,37 @@
-#fullscreen {
+.fullscreen {
 	display: block;
 	width: 100%;
 	height: 100%;
 	overflow: hidden;
+}
+
+.centered {
+	display: block;
+	margin: auto;
+	width: 50%;
+	text-align: center;
+}
+
+table {
+	table-layout: fixed;
+	border-collapse: collapse;
+}
+
+table, th, td {
+	border: 1px solid black;
+	width:100%;
+}
+
+th {
+	min-width:5rem;
+	height:1.5rem;
+	text-align: center;
+}
+td {
+	min-width:5rem;
+	height:1.5rem;
+	padding: 0.2rem;
+	text-align: left;
 }
 
 html,body {

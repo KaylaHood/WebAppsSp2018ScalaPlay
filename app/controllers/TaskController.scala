@@ -2,6 +2,7 @@ package controllers
 
 import javax.inject._
 import play.api.mvc._
+import play.api.Logger
 
 import play.api.db.slick.DatabaseConfigProvider
 import play.api.db.slick.HasDatabaseConfigProvider
@@ -25,9 +26,8 @@ class TaskController @Inject()(protected val dbConfigProvider: DatabaseConfigPro
   def getNewTaskForm = {
     Form(mapping(
       "ownerId" -> ignored((loggedInUser.get.userId).get),
-      "title" -> nonEmptyText(minLength=1, maxLength=128),
-      "desc" -> text(minLength = 0, maxLength = 300),
-      "dueDate" -> sqlTimestamp("MM-dd-yyyy hh:mm"))(NewTask.apply)(NewTask.unapply))
+      "title" -> text,
+      "desc" -> text)(NewTask.apply)(NewTask.unapply))
   }
       
   def allUserTasks = Action.async { implicit request =>
@@ -51,10 +51,12 @@ class TaskController @Inject()(protected val dbConfigProvider: DatabaseConfigPro
       loggedInUser = Some(TaskUserUtils.taskUserFromString(sessConnected.get))
       (this.getNewTaskForm).bindFromRequest().fold(
         formWithErrors => {
+          Logger.debug("Add task had errors...")
           val tasksFuture = TaskQueries.findByUser(loggedInUser.get.userId.get, db)
           tasksFuture.map(tasks => BadRequest(views.html.taskManager(tasks, loggedInUser.get.username, formWithErrors)))
         },
         newTask => {
+          Logger.debug("Adding new task...")
           val addFuture = TaskQueries.addTask(newTask, db)
           addFuture.map { cnt =>
             if(cnt == 1) Redirect(routes.TaskController.allUserTasks).flashing("message" -> "New task added.")

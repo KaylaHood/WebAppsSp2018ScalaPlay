@@ -26,14 +26,14 @@ object TaskUserQueries {
   
   def addTaskUser(ntu: NewTaskUser, db: Database)(implicit ec: ExecutionContext): Future[Option[TaskUser]] = {
     val existing = findByCredentials(ntu.username, ntu.password, db)
-    existing.map{user => 
-      if(user.isDefined) {
-        return Future(None)
+    existing.transformWith{userTry => 
+      if(userTry.get.isDefined) {
+        Future(None)
       }
       else {
-        return (db.run {
+        db.run{
           (taskUsers returning taskUsers.map(_.userId) into ((user,id) => Some(user.copy(userId=Some(id))))) += TaskUser(None, ntu.username, ntu.password)
-        })
+        }
       }
     }
   }
@@ -51,6 +51,6 @@ object TaskUserUtils {
   }
   
   def stringFromTaskUser(tu: TaskUser):String = {
-    tu.userId.toString() ++ "," ++ tu.username.toString() ++ "," ++ tu.password.toString()
+    tu.userId.get.toString() ++ "," ++ tu.username.toString() ++ "," ++ tu.password.toString()
   }
 }

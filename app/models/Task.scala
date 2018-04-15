@@ -5,8 +5,8 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import java.time.OffsetDateTime
 
-case class NewTask(ownerId: Int, title: String, descr: String, dueDate: java.sql.Timestamp)
-case class Task(taskId: Option[Int], ownerId: Int, title: String, descr: String, dueDate: java.sql.Timestamp)
+case class NewTask(ownerId: Int, title: String, descr: String)
+case class Task(taskId: Option[Int], ownerId: Int, title: String, descr: String)
 
 object TaskQueries {
   import Tables._
@@ -24,7 +24,7 @@ object TaskQueries {
   
   def addTask(nt: NewTask, db: Database)(implicit ec: ExecutionContext): Future[Int] = {
     db.run {
-      tasks += Task(None, nt.ownerId, nt.title, nt.descr, nt.dueDate)
+      tasks += Task(None, nt.ownerId, nt.title, nt.descr)
     }
   }
   

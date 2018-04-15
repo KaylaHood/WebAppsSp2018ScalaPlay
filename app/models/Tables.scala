@@ -9,8 +9,7 @@ object Tables extends {
     def ownerId = column[Int]("ownerId")
     def title = column[String]("title")
     def descr = column[String]("descr", O.Default(""))
-    def dueDate = column[java.sql.Timestamp]("dueDate")
-    def * = (taskId.?, ownerId, title, descr, dueDate) <> (Task.tupled, Task.unapply)
+    def * = (taskId.?, ownerId, title, descr) <> (Task.tupled, Task.unapply)
   }
   val tasks = TableQuery[Tasks]
   

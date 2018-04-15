@@ -13,6 +13,7 @@ GET		/tasks/removeTask/:id		controllers.TaskController.removeTask(id: Int)
 GET		/tasks/index				controllers.TaskLoginController.index
 GET		/tasks/login				controllers.TaskLoginController.login
 GET		/tasks/register				controllers.TaskLoginController.register
+GET		/tasks/logout				controllers.TaskLoginController.logout
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(file)
